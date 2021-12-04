@@ -11,10 +11,13 @@ router.post('/account', isNotLoggedIn, async (req, res, next) => {
   try {
     const exUser1 = await User.findOne({ where: { email } }); // 이메일 중복 체크
     const exUser2 = await User.findOne({ where: { userId } }); // 사용자이름 중복 체크
-    if (exUser1 || exUser2) {
-      return res.redirect('/join?error=exist');
+    if (exUser1) {
+      return res.status(400).send('email');
     }
-    
+    else if (exUser2) {
+      return res.status(400).send('userId');
+    }
+
     const hash = await bcrypt.hash(password, 12); // password 암호화
     await User.create({
       email,
@@ -36,7 +39,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       return next(authError);
     }
     if (!user) { // 존재하지 않는 사용자일 경우
-      console.log('logloglog');
       console.log(info);
       return res.status(400).send(info)
     }
