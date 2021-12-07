@@ -10,19 +10,20 @@ const cors = require('cors');
 dotenv.config();
 const pageRouter = require('./routes/page');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
 
 // 익스프레스 객체 생성
 var app = express();
 // 패스포트 설정
- passportConfig(); 
+passportConfig();
 // 기본 포트를 app 객체에 속성으로 설정
 app.set('port', process.env.PORT || 8012);
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 
-sequelize.sync({force: false})
+sequelize.sync({ force: false })
     .then(() => {
         console.log('데이터베이스 연결 성공');
     })
@@ -36,8 +37,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(session({
-    resave: false,
-    saveUninitialized: false,
     secret: process.env.COOKIE_SECRET,
     cookie: {
         httpOnly: true,
@@ -47,22 +46,17 @@ app.use(session({
 app.use(passport.initialize()); // 요청 객체에 passport 설정을 심음
 app.use(passport.session()); // req.session 객체에 passport 정보를 저장
 
-
-// app.get('/api/account', (req, res) => {
-//     res.send('<h1>TEST!!! 반갑다 .... </h1>');
-// })
-
-// app.get('/auth', (req, res) => {
-//     res.send('<h1>AUTH!!! 너도 반갑다 .... </h1>');
-// })
+app.use('/api/info', pageRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 
 app.get('*', (req, res) => {
-    console.log('hi');
-    res.send(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 })
 
-app.use('/', pageRouter);
-app.use('/api/auth', authRouter);
+// 화면 engine을 ejs로 설정
+app.set('view engine', 'ejs');
+app.engine('html', require('ejs').renderFile);
 
 app.use((req, res, next) => {
     const error = new Error(`${req.method} ${res.url} 라우터가 없습니다.`);

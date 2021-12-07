@@ -3,7 +3,6 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
 const User = require('../models/user');
-
 const router = express.Router();
 
 router.post('/account', isNotLoggedIn, async (req, res, next) => {
@@ -32,6 +31,7 @@ router.post('/account', isNotLoggedIn, async (req, res, next) => {
   }
 });
 
+
 router.post('/login', isNotLoggedIn, (req, res, next) => {
   passport.authenticate('local', (authError, user, info) => {
     if (authError) {
@@ -47,15 +47,17 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         console.error(loginError);
         return next(loginError);
       }
-      return res.status(200).send('OK');
+      console.log(req.session)
+
+      return res.status(200).send(user);
     });
   })(req, res, next); // 미들웨어 내의 미들웨어에는 (req, res, next)를 붙입니다.
 });
 
-router.get('/logout', isLoggedIn, (req, res) => {
-  req.logout();
+router.post('/logout', isLoggedIn, (req, res) => {
+  // req.logout();
   req.session.destroy();
-  res.redirect('/');
+  return res.status(200).send();
 });
 
 module.exports = router;
