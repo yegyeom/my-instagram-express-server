@@ -19,17 +19,7 @@ router.use((req, res, next) => {
 //   res.render('join', { title: '회원가입 - NodeBird' });
 // });
 
-router.get('/users', isLoggedIn, async (req, res) => {
-  try {
-    const users = await User.findAll({
-      attributes: ['name', 'userId'],
-    });
-    return res.status(200).send(users);
-  } catch (error) {
-    console.log(error);
-    return next(error);
-  }
-});
+
 
 router.get('/', async (req, res, next) => {
   try {
