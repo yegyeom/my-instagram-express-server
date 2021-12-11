@@ -11,6 +11,7 @@ dotenv.config();
 const pageRouter = require('./routes/page');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const postRouter = require('./routes/post');
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');
 
@@ -46,9 +47,10 @@ app.use(session({
 app.use(passport.initialize()); // 요청 객체에 passport 설정을 심음
 app.use(passport.session()); // req.session 객체에 passport 정보를 저장
 
-app.use('/api/info', pageRouter);
+app.use('/api/page', pageRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/post', postRouter);
 
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
