@@ -8,6 +8,10 @@ module.exports = class Post extends Sequelize.Model {
         type: Sequelize.STRING(140),
         allowNull: false,
       },
+      nick: {
+        type: Sequelize.STRING(15),
+        allowNull: false,
+      }
     }, {
       sequelize,
       timestamps: true,
