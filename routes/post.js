@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const { Post, Hashtag, Image } = require('../models');
+const { Post, Hashtag, Image, User } = require('../models');
 const { isLoggedIn } = require('./middlewares');
 const { Op } = require('sequelize');
 const db = require('../models');
@@ -143,19 +143,110 @@ router.patch('/post', isLoggedIn, async (req, res, next) => {
     }
 });
 
-router.get('/posts', isLoggedIn, async (req, res, next) => {
+router.get('/', isLoggedIn, async (req, res, next) => {
     try {
-        const posts = await Post.findAll({
-            include: [
-                {
-                    model: Image,
+        if (req.query.page == 0) {
+            const posts = await Post.findAll({
+                include: [
+                    {
+                        model: Image,
+                    }
+                ]
+            });
+            res.status(200).send(posts);
+        } else if (parseInt(req.query.page) > 0) {
+            const offset = 9 * (req.query.page - 1);
+
+            if (req.query.word.length > 0 && req.query.type.length > 0) {
+                const searchWord = req.query.word;
+                if (req.query.type === 'writer') { // 작성자
+                    const posts = await Post.findAll({
+                        offset: offset,
+                        limit: 9,
+                        include: [
+                            {
+                                model: Image,
+                            },
+                            {
+                                model: User,
+                                where: { name: { [Op.like]: "%" + searchWord + "%" } }
+                            }
+                        ]
+                    });
+                    res.status(200).send(posts);
                 }
-            ]
-        });
-        res.status(200).send(posts);
+                else if (req.query.type === 'post') { // 게시글
+                    const posts = await Post.findAll({
+                        where: {
+                            content: { [Op.like]: "%" + searchWord + "%" }
+                        },
+                        offset: offset,
+                        limit: 9,
+                        include: [
+                            {
+                                model: Image,
+                            },
+                        ]
+                    });
+
+                    const result = [];
+                    for (let i = 0; i < posts.length; i++) {
+                        const hashtags = posts[i].content.match(/#[^\s#]*/g);
+                        console.log(hashtags);
+                        if (!hashtags || !(hashtags.includes('#' + searchWord))) result.push(posts[i]);
+                    }
+                    res.status(200).send(result);
+                }
+                else { // 해시태그
+                    const tmpId = await Hashtag.findAll({
+                        attributes: ['id'],
+                        where: {
+                            title: { [Op.like]: "%" + searchWord + "%" }
+                        }
+                    });
+
+                    const hashtagId = [];
+                    for (let i = 0; i < tmpId.length; i++) hashtagId.push(tmpId[i].dataValues.id);
+
+                    const arr = await db.sequelize.models.PostHashtag.findAll({
+                        attributes: ['PostId'],
+                        where: {
+                            HashtagId: { [Op.in]: hashtagId }
+                        }
+                    });
+                    const postId = [];
+                    for (let i = 0; i < arr.length; i++)
+                        postId.push(arr[i].dataValues.PostId);
+
+                    const posts = await Post.findAll({
+                        where: {
+                            id: { [Op.in]: postId }
+                        },
+                        offset: offset,
+                        limit: 9,
+                        include: [
+                            {
+                                model: Image,
+                            }
+                        ]
+                    });
+                    res.status(200).send(posts);
+                }
+            } else {
+                const posts = await Post.findAll({
+                    offset: offset,
+                    limit: 9,
+                    include: [
+                        {
+                            model: Image,
+                        }
+                    ]
+                });
+                res.status(200).send(posts);
+            }
+        }
     } catch (error) {
         console.error(error);
-        next(error);
     }
 });
 
