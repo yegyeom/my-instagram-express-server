@@ -67,7 +67,6 @@ router.post('/', isLoggedIn, async (req, res, next) => {
             );
             await post.addHashtags(result.map(r => r[0]));
         }
-        console.log('업로드 성공!');
         res.status(200).send('OK');
     } catch (error) {
         console.error(error);
@@ -135,7 +134,6 @@ router.patch('/post', isLoggedIn, async (req, res, next) => {
             await post.addHashtags(result.map(r => r[0]));
         }
 
-        console.log('업로드 성공!');
         res.status(200).send('OK');
     } catch (error) {
         console.error(error);
@@ -145,7 +143,7 @@ router.patch('/post', isLoggedIn, async (req, res, next) => {
 
 router.get('/', isLoggedIn, async (req, res, next) => {
     try {
-        if (req.query.page == 0) {
+        if (req.query.page == 0) { // 전체 글
             const posts = await Post.findAll({
                 include: [
                     {
@@ -156,9 +154,8 @@ router.get('/', isLoggedIn, async (req, res, next) => {
             res.status(200).send(posts);
         } else if (parseInt(req.query.page) > 0) {
             const offset = 9 * (req.query.page - 1);
-
-            if (req.query.word.length > 0 && req.query.type.length > 0) {
-                const searchWord = req.query.word;
+            const searchWord = req.query.word;
+            if (req.query.word.length > 0 && req.query.type.length > 1) { // 검색 (검색창 사용)
                 if (req.query.type === 'writer') { // 작성자
                     const posts = await Post.findAll({
                         offset: offset,
@@ -192,7 +189,6 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                     const result = [];
                     for (let i = 0; i < posts.length; i++) {
                         const hashtags = posts[i].content.match(/#[^\s#]*/g);
-                        console.log(hashtags);
                         if (!hashtags || !(hashtags.includes('#' + searchWord))) result.push(posts[i]);
                     }
                     res.status(200).send(result);
@@ -232,7 +228,51 @@ router.get('/', isLoggedIn, async (req, res, next) => {
                     });
                     res.status(200).send(posts);
                 }
-            } else {
+            } else if (req.query.word.length > 0 && req.query.type.length === 1) { // 검색 (하이퍼링크)
+                if (req.query.type === 'h') {
+                    const hashtagId = await Hashtag.findOne({
+                        attributes: ['id'],
+                        where: {
+                            title: searchWord
+                        }
+                    })
+
+                    const arr = await db.sequelize.models.PostHashtag.findAll({
+                        attributes: ['PostId'],
+                        where: {
+                            HashtagId: hashtagId.dataValues.id
+                        }
+                    });
+                    const postId = [];
+                    for (let i = 0; i < arr.length; i++) postId.push(arr[i].dataValues.PostId);
+
+                    const posts = await Post.findAll({
+                        where: {
+                            id: { [Op.in]: postId }
+                        },
+                        offset: offset,
+                        limit: 9,
+                        include: [
+                            {
+                                model: Image,
+                            }
+                        ]
+                    });
+                    res.status(200).send(posts);
+                } else if (req.query.type === 'n') {
+                    const posts = await Post.findAll({
+                        where: {
+                            nick: searchWord
+                        },
+                        include: [
+                            {
+                                model: Image,
+                            }
+                        ]
+                    })
+                    res.status(200).send(posts);
+                }
+            } else { // 검색 X (한 페이지 기준)
                 const posts = await Post.findAll({
                     offset: offset,
                     limit: 9,

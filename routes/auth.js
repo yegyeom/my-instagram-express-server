@@ -39,7 +39,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       return next(authError);
     }
     if (!user) { // 존재하지 않는 사용자일 경우
-      console.log(info);
       return res.status(400).send(info)
     }
     return req.login(user, (loginError) => {
@@ -47,7 +46,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
         console.error(loginError);
         return next(loginError);
       }
-      console.log(req.session)
 
       return res.status(200).send(user);
     });
@@ -55,7 +53,6 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
 });
 
 router.post('/logout', isLoggedIn, (req, res) => {
-  // req.logout();
   req.session.destroy();
   return res.status(200).send();
 });

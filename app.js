@@ -8,7 +8,6 @@ const passport = require('passport');
 const cors = require('cors');
 
 dotenv.config();
-const pageRouter = require('./routes/page');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const postRouter = require('./routes/post');
@@ -47,7 +46,6 @@ app.use(session({
 app.use(passport.initialize()); // 요청 객체에 passport 설정을 심음
 app.use(passport.session()); // req.session 객체에 passport 정보를 저장
 
-app.use('/api/page', pageRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/post', postRouter);
